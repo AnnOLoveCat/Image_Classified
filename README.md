@@ -133,7 +133,7 @@ uv pip install httpx ruff
 printf "import httpx\nprint('HTTPX', httpx.__version__)\n" > app.py
 
 # 執行
-uv run python app.py
+uv run python main.py
 ```
 
 ---

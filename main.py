@@ -20,10 +20,15 @@ def load_model():
     return model
 
 def preprocess_image(image):
-    img = np.array(image)                   # 1. 轉換成數值矩陣
-    img = cv2.resize(img, (224, 224))             # 2. Resize 到模型需要的尺寸
-    img = preprocess_input(img)             # 3. 做像素標準化，符合訓練分佈
-    img = np.expand_dims(img, axis=0)       # 4. 增加 batch 維度, 輸入格式是 (batch_size, height, width, channels)
+    img_pil = image.convert("RGB")                                        # 先用 PIL 強制轉成 RGB（三通道），避免 RGBA/灰階/CMYK 問題
+
+    img = np.array(img_pil)                                               # 1. 轉換成數值矩陣
+    img = cv2.resize(img, (224, 224), interpolation=cv2.INTER_AREA)       # 2. Resize 到模型需要的尺寸
+
+    img = img.astype(np.float32)                                          # 3. dtype 與模型前處理, 做像素標準化，符合訓練分佈
+    img = preprocess_input(img)                                           # 5. MobileNetV2 的 preprocess_input
+    img = np.expand_dims(img, axis=0)                                     # 6. 增加 batch 維度, 輸入格式是 (batch_size, height, width, channels)
+    
     return img
 
 def classify_image(model, img):
@@ -53,18 +58,18 @@ def main():
     uploaded_file = st.file_uploader("Choose an Image", type=["jpg", "png"])
 
     if uploaded_file is not None:
-        image = st.image(uploaded_file, caption="Uploaded Image", use_column_width=True)
+        preview = st.image(uploaded_file, caption="Uploaded Image", use_container_width=True)    # 這裡只負責顯示圖片
 
         btn = st.button("Classify Image")
 
         if btn:
             with st.spinner("Analyzing Image...take a moment"):
-                image = Image.open(uploaded_file)
-                predictions = classify_image(model, image)
+                img_pil = Image.open(uploaded_file).convert("RGB")      # 這裡負責讀檔，轉成 RGB 圖片，供模型做推論
+                predictions = classify_image(model, img_pil)
 
                 if predictions:
                     st.subheader("Predictions")
-                    for _, label, score in predictions:   #idx部分可以用"_"代替，但為了看懂用idx代替
+                    for _, label, score in predictions:                 #idx部分可以用"_"代替，但為了看懂用idx代替
                         st.write(f"**{label}**: {score:.2%}")
 
 if __name__ == "__main__":
