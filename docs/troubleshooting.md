@@ -73,3 +73,28 @@
 **Q10: 為什麼要`preprocess_input`？**
 
 - A: 把像素值轉成模型訓練時的分佈（例如 [-1, 1]），否則預測品質會下降。<br>**重點**：不要重複呼叫；先 astype(np.float32) 再呼叫一次就好（程式已修正）。
+---
+
+**Q11: JPG/PNG/CMYK/灰階都可以嗎？**
+
+- A: 可以，程式會：<br>用 PIL 的 convert("RGB") 三通道 + OpenCV resize 到 224×224，避免通道數不對或尺寸不合的問題。
+---
+
+**Q12: OpenCV 的 BGR / RGB 會不會搞混？**
+
+- A: 不會，因為我們使用 PIL.Image → np.array 的流程，得到的是 RGB。<br>若你未來改用 cv2.imread，一定要轉 cv2.cvtColor(img, cv2.COLOR_BGR2RGB)。
+---
+
+**Q13: 為什麼只顯示前 3 個預測？**
+
+- A: 用 decode_predictions(predictions, top=3) 取最有意義的 3 筆；你可以改 top=5 或直接秀完整 softmax 向量。
+---
+
+**Q14: 需要 GPU 嗎？**
+
+- A: 不強制。MobileNetV2 是輕量模型，CPU 也可跑。<br>Windows/NVIDIA 想用 GPU → 安裝符合版本的 CUDA/CuDNN 與對應 TensorFlow；macOS Apple Silicon → tensorflow-macos + tensorflow-metal。
+---
+
+**Q15: 可以一次分類多張圖嗎？**
+
+- A: 可以，把多張圖各自 preprocess_image 後以 np.vstack 或 np.concatenate 組成 (N, 224, 224, 3)，再 model.predict(batch)。<br>Streamlit 端可用 accept_multiple_files=True，再迴圈處理。
