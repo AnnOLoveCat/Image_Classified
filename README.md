@@ -68,7 +68,7 @@ uv pip freeze > requirements.txt
 
 **在專案環境中執行 Python/模組/指令**（自動確保相依就緒）：
 ```bash
-uv run python app.py
+uv run python main.py
 uv run python -m your_module
 ```
 
@@ -107,7 +107,7 @@ uv pip install -r requirements.txt
 | 指定版本 | `uv pip install pkg==1.2.3` | `pip install pkg==1.2.3` |
 | 從需求檔安裝 | `uv pip install -r requirements.txt` | 同左 |
 | 匯出需求檔 | `uv pip freeze > requirements.txt` | `pip freeze > requirements.txt` |
-| 執行程式 | `uv run python app.py` | 先啟用 venv 再 `python app.py` |
+| 執行程式 | `uv run python main.py` | 先啟用 venv 再 `python main.py` |
 | 執行工具（臨時） | `uvx ruff` | `pipx run ruff` |
 
 ---
@@ -130,10 +130,11 @@ uv venv
 uv pip install httpx ruff
 
 # 新增檔案
-printf "import httpx\nprint('HTTPX', httpx.__version__)\n" > app.py
+printf "import httpx\nprint('HTTPX', httpx.__version__)\n" > main.py
 
 # 執行
 uv run python main.py
+uv run streamlit run main.py
 ```
 
 ---
