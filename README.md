@@ -1,5 +1,7 @@
 # 使用 uv 安裝與管理 Python 套件（專案快速上手）
 
+網頁連結，可以用用看歐：https://imageclassified.streamlit.app/
+
 參考 -> https://docs.astral.sh/uv/getting-started/installation/#shell-autocompletion
 
 ## 文件
