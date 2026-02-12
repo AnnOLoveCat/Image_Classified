@@ -4,6 +4,7 @@ from PIL import Image                  # 讀圖、色彩空間轉換（特別是
 import cv2                             # OpenCV：畫圖、色彩轉換（YOLO 內建 plot 回傳 BGR 要轉 RGB）
 
 from ultralytics import YOLO           # Ultralytics YOLO介面（支援v11與自訓練的 best.pt）
+from ultralytics import YOLOWorld
 
 # -------------------------
 # Model
@@ -12,7 +13,12 @@ from ultralytics import YOLO           # Ultralytics YOLO介面（支援v11與�
 def load_model():
     # 預設載入 COCO 上預訓練的 YOLO11-L 偵測模型（精度高，但相對慢）
     # 若改用你自己的模型，將路徑改為 'best.pt'（同資料夾或填絕對路徑）
-    return YOLO("yolo11l.pt")          # 也可寫 YOLO("best.pt") 使用自訓練權重
+
+    # model = "yolo11l.pt"  # 預訓練模型檔名（可改為 'best.pt' 或其他）
+    model_world = YOLOWorld("yolov8x-worldv2.pt")  # 世界模型檔名（可改為你的世界模型）
+    model_world.set_classes(["object", "item", "person", "tool", "equipment", "facility", "structure"])
+    # return YOLO("yolo11l.pt")          # 也可寫 YOLO("best.pt") 使用自訓練權重
+    return model_world     # 也可用 YOLOWorld（如果你有訓練世界模型，或想試試看）
 
 # -------------------------
 # Preprocess (optional 但保留轉 RGB 以兼容各種圖片)
@@ -26,7 +32,7 @@ def preprocess_image(image: Image.Image):
 # -------------------------
 # Inference
 # -------------------------
-def detect_objects(model: YOLO, img_np: np.ndarray, conf: float = 0.25):
+def detect_objects(model, img_np: np.ndarray, conf: float = 0.25):
     """
     物件偵測主函式：
       - model : 已載入的 YOLO 模型
@@ -37,7 +43,8 @@ def detect_objects(model: YOLO, img_np: np.ndarray, conf: float = 0.25):
     results = model.predict(
         source=img_np,                  # 輸入影像來源（這裡是 numpy）
         conf=conf,                      # 只保留置信度 >= conf 的框
-        verbose=False                   # 關閉冗長日誌，讓前端乾淨
+        imgsz=1280,
+        verbose=False,                   # 關閉冗長日誌，讓前端乾淨
     )
     return results                      # 回傳 Results 列表（通常單張圖就是長度 1）
 

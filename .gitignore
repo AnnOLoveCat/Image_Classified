@@ -1,0 +1,61 @@
+# --- AI Models (重要：排除大型權重檔) ---
+*.pt
+*.pth
+*.onnx
+*.engine
+*.weights
+
+# --- Python 暫存檔 ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# --- Streamlit 暫存檔 ---
+.streamlit/config.toml
+.streamlit/static/
+.streamlit/run/
+
+# --- 虛擬環境 (Virtual Environments) ---
+venv/
+.venv/
+env/
+.env/
+bin/
+Include/
+Lib/
+Scripts/
+pyvenv.cfg
+
+# --- 影像與資料暫存 (避免把測試用的圖片上傳) ---
+# 如果你有專門放測試圖的資料夾，可以取消下面註解
+# /datasets/
+# /runs/  <-- YOLO 訓練結果通常存在這，建議排除
+
+# --- 作業系統暫存 ---
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- IDE 暫存 ---
+.vscode/
+.idea/
+*.swp
+*.swo
