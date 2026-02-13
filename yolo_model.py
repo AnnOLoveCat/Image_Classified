@@ -5,8 +5,8 @@ import cv2                             # OpenCV：畫圖、色彩轉換（YOLO �
 
 from ultralytics import YOLO           # Ultralytics YOLO介面（支援v11與自訓練的 best.pt）
 from ultralytics import YOLOWorld
-from googletrans import Translator     # 新增：Google 翻譯套件，用於將中文標籤轉為英文
-
+# from googletrans import Translator   #最新:因為此套濺可能是過於老舊必須換掉 新增：Google 翻譯套件，用於將中文標籤轉為英文
+from deep_translator import GoogleTranslator
 # -------------------------
 # Model
 # -------------------------
@@ -49,10 +49,12 @@ def translate_text(text):
     if all(ord(c) < 128 for c in text.replace(",", "").replace(" ", "")):
         return text
     try:
-        translator = Translator()
-        translated = translator.translate(text, dest='en')
-        return translated.text
-    except:
+        # 改用 deep_translator 的寫法，功能一模一樣但不會報錯
+        translator = GoogleTranslator(source='auto', target='en')
+        translated = translator.translate(text)
+        return translated
+    except Exception as e:
+        st.warning(f"Translation failed: {e}") # 顯示錯誤但不讓程式崩潰
         return text
 
 # -------------------------
