@@ -1,61 +1,30 @@
-import importlib
-import numpy as np                     # 數值運算：影像會轉成 numpy 陣列以便處理/推論
-import streamlit as st                 # 建 UI 的框架（上傳圖片、按鈕、顯示結果）
-from PIL import Image                  # 讀圖、色彩空間轉換（特別是統一成 RGB）
-import cv2                             # OpenCV：畫圖、色彩轉換（YOLO 內建 plot 回傳 BGR 要轉 RGB）
-import os
-import subprocess
-import sys
+import numpy as np                     # 數值運算
+import streamlit as st                 # UI 框架
+from PIL import Image                  # 影像處理
+import cv2                             # OpenCV
+from ultralytics import YOLOWorld      # YOLO 模型
+from deep_translator import GoogleTranslator # 翻譯工具 (穩定版)
 
-# --- 自動修復依賴 (Auto-Fix Dependencies) ---
-# 定義：(程式碼用的名字, 安裝用的名字)
-packages = [
-    ("deep_translator", "deep-translator"),  # 關鍵：import用底線，install用連字號
-    ("bs4", "beautifulsoup4")                # 關鍵：import用bs4，install用全名
-]
-
-for import_name, install_name in packages:
-    if importlib.util.find_spec(import_name) is None:
-        st.warning(f"正在安裝遺失的套件: {install_name} ...")
-        try:
-            # 強制執行 pip install deep-translator (用連字號)
-            subprocess.check_call([sys.executable, "-m", "pip", "install", install_name])
-            st.success(f"{install_name} 安裝成功！")
-        except subprocess.CalledProcessError as e:
-            st.error(f"安裝失敗: {e}")
-            st.stop()
-
-# --- 現在可以安心 Import 了 (用底線) ---
-from deep_translator import GoogleTranslator
-
-from ultralytics import YOLO           # Ultralytics YOLO介面（支援v11與自訓練的 best.pt）
-from ultralytics import YOLOWorld
-# from googletrans import Translator   #最新:因為此套濺可能是過於老舊必須換掉 新增：Google 翻譯套件，用於將中文標籤轉為英文
-from deep_translator import GoogleTranslator
 # -------------------------
 # Model
 # -------------------------
-@st.cache_resource                     # 把模型載入結果快取起來，避免每次重繪 UI 都重新下載/載入模型
+@st.cache_resource
 def load_model():
-    # model = "yolo11l.pt"  # 預訓練模型檔名（可改為 'best.pt' 或其他）
-    model_world = YOLOWorld("yolov8x-worldv2.pt")  # 世界模型檔名
-    # 預設給予一組通用標籤，避免初始化報錯
+    model_world = YOLOWorld("yolov8x-worldv2.pt")
+    # 預設標籤，避免初始化報錯
     model_world.set_classes(["object", "item", "person", "tool", "equipment", "facility", "structure"])
-    return model_world    # 也可用 YOLOWorld
+    return model_world
 
 # -------------------------
-# Preprocess & Helpers (新增功能區)
+# Preprocess & Helpers
 # -------------------------
 def preprocess_image(image: Image.Image):
-    img_pil = image.convert("RGB")          # 強制轉成 RGB（三通道）
-    img = np.array(img_pil)                 # 轉成 numpy 格式
+    img_pil = image.convert("RGB")
+    img = np.array(img_pil)
     return img
 
 def enhance_image(img_np):
-    """
-    新增功能：影像增強 (CLAHE)
-    針對工廠或低光源環境，強化邊緣細節，提升 YOLO 辨識率
-    """
+    """CLAHE 影像增強"""
     lab = cv2.cvtColor(img_np, cv2.COLOR_RGB2LAB)
     l, a, b = cv2.split(lab)
     clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
@@ -65,58 +34,47 @@ def enhance_image(img_np):
     return enhanced
 
 def translate_text(text):
-    """
-    新增功能：標籤翻譯
-    讓使用者輸入中文 (如: 安全帽)，自動轉為英文 (helmet) 給模型讀取
-    """
+    """中文轉英文翻譯"""
     if not text: return ""
-    # 若輸入純英文則跳過翻譯
+    # 若輸入純英文則跳過
     if all(ord(c) < 128 for c in text.replace(",", "").replace(" ", "")):
         return text
     try:
-        # 改用 deep_translator 的寫法，功能一模一樣但不會報錯
         translator = GoogleTranslator(source='auto', target='en')
         translated = translator.translate(text)
         return translated
     except Exception as e:
-        st.warning(f"Translation failed: {e}") # 顯示錯誤但不讓程式崩潰
+        st.warning(f"Translation failed: {e}")
         return text
 
 # -------------------------
 # Inference
 # -------------------------
 def detect_objects(model, img_np: np.ndarray, conf: float = 0.25):
-    """
-    物件偵測主函式
-    """
-    # YOLO 的 predict 可直接接受 numpy / PIL / 檔案路徑
     results = model.predict(
-        source=img_np,                  # 輸入影像來源（這裡是 numpy）
-        conf=conf,                      # 只保留置信度 >= conf 的框
-        imgsz=1280,                     # 保持 1280 可確保較高準確度
-        verbose=False,                  # 關閉冗長日誌，讓前端乾淨
+        source=img_np,
+        conf=conf,
+        imgsz=1280,
+        verbose=False,
     )
-    return results                      # 回傳 Results 列表
+    return results
 
-# -------------------------
-# Draw / Render
-# -------------------------
 def render_result(result):
-    plotted = result.plot()                             # 內建畫框、標籤、信心分數（回傳 BGR）
-    plotted = cv2.cvtColor(plotted, cv2.COLOR_BGR2RGB)  # 轉回 RGB 給 st.image 顯示
+    plotted = result.plot()
+    plotted = cv2.cvtColor(plotted, cv2.COLOR_BGR2RGB)
     return plotted
 
 # -------------------------
-# Streamlit App
+# Main App
 # -------------------------
 def main():
-    st.set_page_config(page_title="YOLO Model AI Image Classifying", layout="centered")     # 頁籤標題, 置中排版
-    st.title("YOLO Model Image Classifying")                                                # 頁面主標
-    st.write("Upload an Image and let AI tell you what's in it（mostly COCO category）")    # 簡介
+    st.set_page_config(page_title="YOLO Model AI Image Classifying", layout="centered")
+    st.title("YOLO Model Image Classifying")
+    st.write("Upload an Image and let AI tell you what's in it (mostly COCO category)")
 
-    model = load_model()    # 載入並快取模型
+    model = load_model()
 
-    # --- 新增：側邊欄 (效能優化工具) ---
+    # --- Sidebar ---
     with st.sidebar:
         st.header("Optimization Tools")
         st.write("Export model for deployment (e.g., Jetson Orin Nano).")
@@ -125,12 +83,12 @@ def main():
             try:
                 with st.spinner(f"Exporting to {export_format}..."):
                     fmt = "onnx" if "ONNX" in export_format else "engine"
-                    path = model.export(format=fmt) # 執行匯出
+                    path = model.export(format=fmt)
                 st.success(f"Exported to: {path}")
             except Exception as e:
                 st.error(f"Export failed: {e}")
 
-    # --- 主畫面 UI ---
+    # --- Main UI ---
     with st.container():
         uploaded_file = st.file_uploader("Choose an Image", type=["jpg", "jpeg", "png"])
         
@@ -140,51 +98,45 @@ def main():
             help="Example: 安全帽, 人 (will be auto-translated)"
         )
         
-        # 新增：影像增強開關 (排版調整，與 Slider 放在一起)
         col1, col2 = st.columns([3, 1])
         with col1:
             conf = st.slider("Confidence threshold", 0.05, 0.95, 0.25, 0.05)
         with col2:
-            st.write("") # 佔位，讓 Checkbox 對齊
+            st.write("")
             st.write("") 
             use_enhance = st.checkbox("Enhance Image", value=False, help="Use CLAHE for better details")
 
     if uploaded_file is not None:
-        # 影像讀取與處理
-        img_pil = Image.open(uploaded_file).convert("RGB")  # 安全起見再轉 RGB 一次
-        img_np = preprocess_image(img_pil)                  # 轉 numpy
+        img_pil = Image.open(uploaded_file).convert("RGB")
+        img_np = preprocess_image(img_pil)
         
-        # 根據開關決定是否進行影像增強
         if use_enhance:
             img_np = enhance_image(img_np)
             st.image(img_np, caption="Uploaded Image (Enhanced)", use_container_width=True)
         else:
             st.image(img_pil, caption="Uploaded Image", use_container_width=True)
 
-        if st.button("Detect"):                        # 點擊後才進行推論
+        if st.button("Detect"):
             if not user_classes:
                 st.warning("At Least One Class Name！")
                 return
             
-            with st.spinner("Analyzing Image (Translating tags & Detecting)..."):     # 顯示載入中畫面
-
-                # 1. 翻譯標籤 (中文 -> 英文)
+            with st.spinner("Analyzing Image (Translating tags & Detecting)..."):
+                # 1. 翻譯
                 translated_classes = translate_text(user_classes)
                 class_list = [c.strip() for c in translated_classes.split(",") if c.strip()]
                 
-                # 2. 設定使用者的指定的類別 (餵給模型的必須是英文)
-                model.set_classes(class_list)                       
+                # 2. 設定類別
+                model.set_classes(class_list)
 
-                # 3. 執行偵測 (使用處理過的 img_np)
+                # 3. 偵測
                 results = detect_objects(model, img_np, conf=conf)
                 
                 if results and len(results[0].boxes) > 0:
                     result = results[0]
-                    # 畫圖並顯示
                     plotted_rgb = render_result(result)
                     st.image(plotted_rgb, caption=f"Detections (Targets: {translated_classes})", use_container_width=True)
                     
-                    # 顯示文字清單
                     st.subheader("Detections (Top)")
                     for b in result.boxes:
                         cls_id = int(b.cls[0])
@@ -194,14 +146,16 @@ def main():
                 else:
                     st.info("No Objects Detected Above The Confidence Threshold.")
 
+                # 統計圖表
                 if results:
                     counts = {}
                     for b in results[0].boxes:
                         label = results[0].names[int(b.cls[0])]
                         counts[label] = counts.get(label, 0) + 1
                     
-                    st.write("### Statistical Results")
-                    st.bar_chart(counts) # 畫長條圖
-                    
+                    if counts:
+                        st.write("### Statistical Results")
+                        st.bar_chart(counts)
+
 if __name__ == "__main__":
     main()
