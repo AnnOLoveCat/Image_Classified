@@ -7,6 +7,7 @@ from ultralytics import YOLO           # Ultralytics YOLO介面（支援v11與�
 from ultralytics import YOLOWorld
 # from googletrans import Translator   #最新:因為此套濺可能是過於老舊必須換掉 新增：Google 翻譯套件，用於將中文標籤轉為英文
 from deep_translator import GoogleTranslator
+
 # -------------------------
 # Model
 # -------------------------
