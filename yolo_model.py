@@ -1,7 +1,32 @@
+import importlib
 import numpy as np                     # 數值運算：影像會轉成 numpy 陣列以便處理/推論
 import streamlit as st                 # 建 UI 的框架（上傳圖片、按鈕、顯示結果）
 from PIL import Image                  # 讀圖、色彩空間轉換（特別是統一成 RGB）
 import cv2                             # OpenCV：畫圖、色彩轉換（YOLO 內建 plot 回傳 BGR 要轉 RGB）
+import os
+import subprocess
+import sys
+
+# --- 自動修復依賴 (Auto-Fix Dependencies) ---
+# 定義：(程式碼用的名字, 安裝用的名字)
+packages = [
+    ("deep_translator", "deep-translator"),  # 關鍵：import用底線，install用連字號
+    ("bs4", "beautifulsoup4")                # 關鍵：import用bs4，install用全名
+]
+
+for import_name, install_name in packages:
+    if importlib.util.find_spec(import_name) is None:
+        st.warning(f"正在安裝遺失的套件: {install_name} ...")
+        try:
+            # 強制執行 pip install deep-translator (用連字號)
+            subprocess.check_call([sys.executable, "-m", "pip", "install", install_name])
+            st.success(f"{install_name} 安裝成功！")
+        except subprocess.CalledProcessError as e:
+            st.error(f"安裝失敗: {e}")
+            st.stop()
+
+# --- 現在可以安心 Import 了 (用底線) ---
+from deep_translator import GoogleTranslator
 
 from ultralytics import YOLO           # Ultralytics YOLO介面（支援v11與自訓練的 best.pt）
 from ultralytics import YOLOWorld
