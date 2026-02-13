@@ -2,6 +2,21 @@ import numpy as np                     # 數值運算：影像會轉成 numpy �
 import streamlit as st                 # 建 UI 的框架（上傳圖片、按鈕、顯示結果）
 from PIL import Image                  # 讀圖、色彩空間轉換（特別是統一成 RGB）
 import cv2                             # OpenCV：畫圖、色彩轉換（YOLO 內建 plot 回傳 BGR 要轉 RGB）
+import os
+import subprocess
+import sys
+
+# --- 強制安裝區塊 (解決 Streamlit Cloud 找不到套件的問題) ---
+def install(package):
+    subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+
+try:
+    from deep_translator import GoogleTranslator
+except ImportError:
+    st.warning("正在修復環境：強制安裝 deep-translator...")
+    install("deep-translator")
+    install("beautifulsoup4") # 確保依賴也被安裝
+    from deep_translator import GoogleTranslator
 
 from ultralytics import YOLO           # Ultralytics YOLO介面（支援v11與自訓練的 best.pt）
 from ultralytics import YOLOWorld
