@@ -1,0 +1,8 @@
+# requirements.in
+ultralytics
+streamlit
+opencv-python-headless
+pillow
+numpy
+googletrans==4.0.0-rc1
+git+https://github.com/ultralytics/CLIP.git
