@@ -1,9 +1,9 @@
-# requirements.in
 ultralytics
 streamlit
 opencv-python-headless
 pillow
 numpy
-googletrans==4.0.0-rc1
 deep-translator
+beautifulsoup4
+beautifulsoup
 git+https://github.com/ultralytics/CLIP.git
