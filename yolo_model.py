@@ -3,13 +3,13 @@ import streamlit as st                 # UI 框架
 from PIL import Image                  # 影像處理
 import cv2                             # OpenCV
 from ultralytics import YOLOWorld      # YOLO 模型
-from deep_translator import GoogleTranslator # 翻譯工具 (穩定版)
 
 # -------------------------
 # Model
 # -------------------------
 @st.cache_resource
 def load_model():
+    # 使用 YOLO-World 模型
     model_world = YOLOWorld("yolov8x-worldv2.pt")
     # 預設標籤，避免初始化報錯
     model_world.set_classes(["object", "item", "person", "tool", "equipment", "facility", "structure"])
@@ -24,7 +24,7 @@ def preprocess_image(image: Image.Image):
     return img
 
 def enhance_image(img_np):
-    """CLAHE 影像增強"""
+    """CLAHE 影像增強：針對工廠/低光源環境"""
     lab = cv2.cvtColor(img_np, cv2.COLOR_RGB2LAB)
     l, a, b = cv2.split(lab)
     clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
@@ -32,20 +32,6 @@ def enhance_image(img_np):
     limg = cv2.merge((cl, a, b))
     enhanced = cv2.cvtColor(limg, cv2.COLOR_LAB2RGB)
     return enhanced
-
-def translate_text(text):
-    """中文轉英文翻譯"""
-    if not text: return ""
-    # 若輸入純英文則跳過
-    if all(ord(c) < 128 for c in text.replace(",", "").replace(" ", "")):
-        return text
-    try:
-        translator = GoogleTranslator(source='auto', target='en')
-        translated = translator.translate(text)
-        return translated
-    except Exception as e:
-        st.warning(f"Translation failed: {e}")
-        return text
 
 # -------------------------
 # Inference
@@ -70,11 +56,11 @@ def render_result(result):
 def main():
     st.set_page_config(page_title="YOLO Model AI Image Classifying", layout="centered")
     st.title("YOLO Model Image Classifying")
-    st.write("Upload an Image and let AI tell you what's in it (mostly COCO category)")
+    st.write("Upload an Image and let AI tell you what's in it.")
 
     model = load_model()
 
-    # --- Sidebar ---
+    # --- Sidebar: Export Tools ---
     with st.sidebar:
         st.header("Optimization Tools")
         st.write("Export model for deployment (e.g., Jetson Orin Nano).")
@@ -92,10 +78,11 @@ def main():
     with st.container():
         uploaded_file = st.file_uploader("Choose an Image", type=["jpg", "jpeg", "png"])
         
+        # 修改提示：要求使用者直接輸入英文
         user_classes = st.text_input(
-            "Wanted Object Classes (Input Chinese or English, Comma-Separated)",
-            value="person, chair, bottle, phone",
-            help="Example: 安全帽, 人 (will be auto-translated)"
+            "Wanted Object Classes (Input English Only, Comma-Separated)",
+            value="person, helmet, vest, machinery",
+            help="Example: person, hardhat, steel beam"
         )
         
         col1, col2 = st.columns([3, 1])
@@ -118,44 +105,38 @@ def main():
 
         if st.button("Detect"):
             if not user_classes:
-                st.warning("At Least One Class Name！")
+                st.warning("Please enter at least one class name.")
                 return
             
-            with st.spinner("Analyzing Image (Translating tags & Detecting)..."):
-                # 1. 翻譯
-                translated_classes = translate_text(user_classes)
-                class_list = [c.strip() for c in translated_classes.split(",") if c.strip()]
+            with st.spinner("Analyzing Image..."):
+                # 直接處理字串，不再翻譯
+                class_list = [c.strip() for c in user_classes.split(",") if c.strip()]
                 
-                # 2. 設定類別
+                # 設定類別
                 model.set_classes(class_list)
 
-                # 3. 偵測
+                # 偵測
                 results = detect_objects(model, img_np, conf=conf)
                 
                 if results and len(results[0].boxes) > 0:
                     result = results[0]
                     plotted_rgb = render_result(result)
-                    st.image(plotted_rgb, caption=f"Detections (Targets: {translated_classes})", use_container_width=True)
+                    st.image(plotted_rgb, caption=f"Detections", use_container_width=True)
                     
-                    st.subheader("Detections (Top)")
+                    st.subheader("Detections List")
+                    # 統計數量
+                    counts = {}
                     for b in result.boxes:
                         cls_id = int(b.cls[0])
                         label = result.names[cls_id]
                         score = float(b.conf[0])
+                        counts[label] = counts.get(label, 0) + 1
                         st.write(f"- **{label}** (Confidence: {score:.2f})")
+                    
+                    st.write("### Statistical Results")
+                    st.bar_chart(counts)
                 else:
                     st.info("No Objects Detected Above The Confidence Threshold.")
-
-                # 統計圖表
-                if results:
-                    counts = {}
-                    for b in results[0].boxes:
-                        label = results[0].names[int(b.cls[0])]
-                        counts[label] = counts.get(label, 0) + 1
-                    
-                    if counts:
-                        st.write("### Statistical Results")
-                        st.bar_chart(counts)
 
 if __name__ == "__main__":
     main()

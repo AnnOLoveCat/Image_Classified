@@ -3,8 +3,6 @@ streamlit
 opencv-python-headless
 pillow
 numpy
-requests
 beautifulsoup4
 beautifulsoup
-deep-translator
 git+https://github.com/ultralytics/CLIP.git
