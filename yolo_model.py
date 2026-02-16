@@ -3,6 +3,7 @@ import streamlit as st                 # UI 框架
 from PIL import Image                  # 影像處理
 import cv2                             # OpenCV
 from ultralytics import YOLOWorld      # YOLO 模型
+import os
 
 # -------------------------
 # Model

@@ -61,6 +61,14 @@ uv pip install -r requirements.txt
 ```bash
 uv pip freeze > requirements.txt
 ```
+**額外指令**
+```bash
+uv pip sync requirements.txt
+```
+這個指令可以做以下這些
+1. 安裝缺少的套件。
+2. 更新版本不對的套件。
+3. 刪除所有在當前環境中不在 requirements.txt 裡的廢棄套件。
 
 > 備註：`uv pip` 是對 pip/pip-tools 的高速相容介面，常見子指令（`install`、`freeze`、`compile`、`sync` 等）皆可用。
 

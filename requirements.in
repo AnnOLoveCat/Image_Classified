@@ -5,4 +5,7 @@ pillow
 numpy
 beautifulsoup4
 beautifulsoup
+onnx>=1.12.0
+onnxslim
+onnxruntime
 git+https://github.com/ultralytics/CLIP.git
