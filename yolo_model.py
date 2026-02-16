@@ -24,7 +24,7 @@ def preprocess_image(image: Image.Image):
     return img
 
 def enhance_image(img_np):
-    """CLAHE 影像增強：針對工廠/低光源環境"""
+    """影像增強"""
     lab = cv2.cvtColor(img_np, cv2.COLOR_RGB2LAB)
     l, a, b = cv2.split(lab)
     clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
@@ -65,6 +65,11 @@ def main():
         st.header("Optimization Tools")
         st.write("Export model for deployment (e.g., Jetson Orin Nano).")
         export_format = st.selectbox("Format", ["ONNX", "TensorRT (.engine)"])
+
+        # 1. 初始化 session_state，確保下載按鈕狀態被記住
+        if "export_file" not in st.session_state:
+            st.session_state['export_file'] = None
+
         if st.button("Export Model"):
             try:
                 with st.spinner(f"Exporting to {export_format}..."):
@@ -73,7 +78,39 @@ def main():
                 st.success(f"Exported to: {path}")
             except Exception as e:
                 st.error(f"Export failed: {e}")
+                
+        # 2. 匯出按鈕邏輯
+        if st.button("Generate Export File"):
+            try:
+                with st.spinner(f"Exporting to {export_format}... (This may take a while)"):
+                    fmt = "onnx" if "ONNX" in export_format else "engine"
+                    
+                    # 執行匯出，並取得伺服器上的檔案路徑
+                    path = model.export(format=fmt) 
+                    
+                    # 將路徑存入 session_state
+                    st.session_state['export_file'] = path
+                    
+                st.success(f"Export successful! File is ready.")
+                
+            except Exception as e:
+                st.error(f"Export failed: {e}")
+                st.session_state['export_file'] = None # 失敗時重置
 
+        # 3. 如果 session_state 裡有檔案，顯示下載按鈕
+        # 這是讓檔案能從「雲端」傳回「使用者電腦」的唯一橋樑
+        if st.session_state['export_file'] and os.path.exists(st.session_state['export_file']):
+            file_path = st.session_state['export_file']
+            file_name = os.path.basename(file_path)
+            
+            with open(file_path, "rb") as f:
+                st.download_button(
+                    label=f"⬇️ Click to Download {file_name}",
+                    data=f,
+                    file_name=file_name,
+                    mime="application/octet-stream",
+                    type="primary" # 讓按鈕變明顯的顏色
+                )
     # --- Main UI ---
     with st.container():
         uploaded_file = st.file_uploader("Choose an Image", type=["jpg", "jpeg", "png"])
@@ -109,14 +146,9 @@ def main():
                 return
             
             with st.spinner("Analyzing Image..."):
-                # 直接處理字串，不再翻譯
-                class_list = [c.strip() for c in user_classes.split(",") if c.strip()]
-                
-                # 設定類別
-                model.set_classes(class_list)
-
-                # 偵測
-                results = detect_objects(model, img_np, conf=conf)
+                class_list = [c.strip() for c in user_classes.split(",") if c.strip()] # 直接處理字串，不再翻譯
+                model.set_classes(class_list)# 設定類別
+                results = detect_objects(model, img_np, conf=conf)# 偵測
                 
                 if results and len(results[0].boxes) > 0:
                     result = results[0]
