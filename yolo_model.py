@@ -4,9 +4,6 @@ from PIL import Image                  # 影像處理
 import cv2                             # OpenCV
 from ultralytics import YOLOWorld      # YOLO 模型
 import os
-import onnx
-import onnxruntime
-
 # -------------------------
 # Model
 # -------------------------
@@ -27,7 +24,7 @@ def preprocess_image(image: Image.Image):
     return img
 
 def enhance_image(img_np):
-    """影像增強"""
+    """CLAHE 影像增強"""
     lab = cv2.cvtColor(img_np, cv2.COLOR_RGB2LAB)
     l, a, b = cv2.split(lab)
     clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
@@ -69,39 +66,29 @@ def main():
         st.write("Export model for deployment (e.g., Jetson Orin Nano).")
         export_format = st.selectbox("Format", ["ONNX", "TensorRT (.engine)"])
 
-        # 1. 初始化 session_state，確保下載按鈕狀態被記住
+        # 1. 初始化 session_state
         if "export_file" not in st.session_state:
             st.session_state['export_file'] = None
 
+        # 2. 匯出按鈕 (已合併修正：單一按鈕處理匯出與狀態更新)
         if st.button("Export Model"):
-            try:
-                with st.spinner(f"Exporting to {export_format}..."):
-                    fmt = "onnx" if "ONNX" in export_format else "engine"
-                    path = model.export(format=fmt)
-                st.success(f"Exported to: {path}")
-            except Exception as e:
-                st.error(f"Export failed: {e}")
-                
-        # 2. 匯出按鈕邏輯
-        if st.button("Generate Export File"):
             try:
                 with st.spinner(f"Exporting to {export_format}... (This may take a while)"):
                     fmt = "onnx" if "ONNX" in export_format else "engine"
                     
-                    # 執行匯出，並取得伺服器上的檔案路徑
+                    # 執行匯出
                     path = model.export(format=fmt) 
                     
-                    # 將路徑存入 session_state
+                    # 成功後，將路徑存入 session_state，這樣重整後下載按鈕才不會消失
                     st.session_state['export_file'] = path
                     
-                st.success(f"Export successful! File is ready.")
+                st.success(f"Export successful! File ready: {os.path.basename(path)}")
                 
             except Exception as e:
                 st.error(f"Export failed: {e}")
                 st.session_state['export_file'] = None # 失敗時重置
 
-        # 3. 如果 session_state 裡有檔案，顯示下載按鈕
-        # 這是讓檔案能從「雲端」傳回「使用者電腦」的唯一橋樑
+        # 3. 顯示下載按鈕 (只要 session_state 有值就顯示)
         if st.session_state['export_file'] and os.path.exists(st.session_state['export_file']):
             file_path = st.session_state['export_file']
             file_name = os.path.basename(file_path)
@@ -112,13 +99,13 @@ def main():
                     data=f,
                     file_name=file_name,
                     mime="application/octet-stream",
-                    type="primary" # 讓按鈕變明顯的顏色
+                    type="primary"
                 )
+
     # --- Main UI ---
     with st.container():
         uploaded_file = st.file_uploader("Choose an Image", type=["jpg", "jpeg", "png"])
         
-        # 修改提示：要求使用者直接輸入英文
         user_classes = st.text_input(
             "Wanted Object Classes (Input English Only, Comma-Separated)",
             value="person, helmet, vest, machinery",
@@ -149,9 +136,9 @@ def main():
                 return
             
             with st.spinner("Analyzing Image..."):
-                class_list = [c.strip() for c in user_classes.split(",") if c.strip()] # 直接處理字串，不再翻譯
-                model.set_classes(class_list)# 設定類別
-                results = detect_objects(model, img_np, conf=conf)# 偵測
+                class_list = [c.strip() for c in user_classes.split(",") if c.strip()]
+                model.set_classes(class_list)
+                results = detect_objects(model, img_np, conf=conf)
                 
                 if results and len(results[0].boxes) > 0:
                     result = results[0]
@@ -159,7 +146,6 @@ def main():
                     st.image(plotted_rgb, caption=f"Detections", use_container_width=True)
                     
                     st.subheader("Detections List")
-                    # 統計數量
                     counts = {}
                     for b in result.boxes:
                         cls_id = int(b.cls[0])
