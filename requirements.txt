@@ -1,11 +1,9 @@
-# --- 核心套件 ---
 ultralytics
 streamlit
 opencv-python-headless
 pillow
 numpy
-git+https://github.com/ultralytics/CLIP.git
-
 onnx>=1.12.0
 onnxslim
 onnxruntime
+git+https://github.com/ultralytics/CLIP.git
