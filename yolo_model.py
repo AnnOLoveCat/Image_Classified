@@ -1,3 +1,20 @@
+# --- 偵測環境是否正常安裝 ---
+try:
+    import onnx
+    import onnxsim
+    import onnxruntime
+    # st.toast("Environment check passed: ONNX packages found.", icon="✅") 
+except ImportError as e:
+    st.error(f"環境安裝失敗，缺少套件: {e}")
+    st.info("正在嘗試最後手段：強制執行 pip install...")
+    # 這是最後的救命稻草，但在雲端通常會失敗，僅作為除錯訊息
+    try:
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "onnx", "onnxslim", "onnxruntime"])
+        st.success("強制安裝成功！請重新整理頁面。")
+    except Exception as install_error:
+        st.error(f"無法修復環境: {install_error}")
+        st.stop()
+
 import numpy as np                     # 數值運算
 import streamlit as st                 # UI 框架
 from PIL import Image                  # 影像處理
