@@ -5,7 +5,7 @@
 參考 -> https://docs.astral.sh/uv/getting-started/installation/#shell-autocompletion
 
 ## 文件
-- [安裝教學](installation.md)
+- [匯出工具問題與解法](docs/export_tool.md)
 - [常見問題與解法](docs/troubleshooting.md)
 ---
 
