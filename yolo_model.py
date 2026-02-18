@@ -10,7 +10,7 @@ import os
 @st.cache_resource
 def load_model():
     # 使用 YOLO-World 模型
-    model_world = YOLOWorld("yolov8s-worldv2.pt")
+    model_world = YOLOWorld("yolov8x-worldv2.pt")
     # 預設標籤，避免初始化報錯
     model_world.set_classes(["object", "item", "person", "tool", "equipment", "facility", "structure"])
     return model_world
