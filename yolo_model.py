@@ -93,7 +93,7 @@ def main():
                     fmt = "onnx" if "ONNX" in export_format else "engine"
                     
                     # 執行匯出
-                    path = model.export(format=fmt) 
+                    path = model.export(format=fmt, simplify=False)
                     
                     # 成功後，將路徑存入 session_state，這樣重整後下載按鈕才不會消失
                     st.session_state['export_file'] = path
