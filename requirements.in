@@ -1,8 +1,8 @@
+onnx>=1.12.0
+onnxruntime
 ultralytics[export]
 streamlit
 opencv-python-headless
 pillow
 numpy<2.0.0
 git+https://github.com/ultralytics/CLIP.git
-onnx>=1.12.0
-onnxruntime

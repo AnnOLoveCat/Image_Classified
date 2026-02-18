@@ -3,22 +3,32 @@ import streamlit as st                 # UI 框架
 from PIL import Image                  # 影像處理
 import cv2                             # OpenCV
 from ultralytics import YOLOWorld      # YOLO 模型
-import os
+import os, sys, subprocess
 
-# --- 環境診斷區 (Debugging) ---
-st.sidebar.error("⚠️ 環境診斷模式開啟")
+# --- 暴力修復環境 (Auto-Install) ---
+def install_package(package):
+    try:
+        # 使用 --user 參數繞過權限鎖定
+        subprocess.check_call([sys.executable, "-m", "pip", "install", package, "--user"])
+        print(f"Successfully installed {package}")
+    except Exception as e:
+        print(f"Failed to install {package}: {e}")
+
 try:
-    # 執行 pip list 看看環境裡到底有誰
-    installed_packages = os.popen('pip list').read()
-    st.sidebar.text_area("已安裝套件清單 (Pip List)", installed_packages, height=300)
-    
-    # 嘗試匯入看看
     import onnx
-    st.sidebar.success(f"ONNX 已安裝! 版本: {onnx.__version__}")
 except ImportError:
-    st.sidebar.error("找不到 ONNX 套件 (Import failed)")
-except Exception as e:
-    st.sidebar.error(f"無法讀取清單: {e}")
+    # 如果找不到 onnx，就現場安裝
+    install_package("onnx>=1.12.0")
+    install_package("onnxruntime")
+    
+    # 安裝完後，把使用者目錄加入系統路徑，確保程式讀得到
+    import site
+    try:
+        sys.path.append(site.getusersitepackages())
+    except AttributeError:
+        # Fallback for some environments
+        pass
+# -----------------------------------
 
 # -------------------------
 # Model
