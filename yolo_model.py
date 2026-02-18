@@ -3,33 +3,7 @@ import streamlit as st                 # UI 框架
 from PIL import Image                  # 影像處理
 import cv2                             # OpenCV
 from ultralytics import YOLOWorld      # YOLO 模型
-import os, sys, subprocess
-
-# --- 暴力修復環境 (Auto-Install) ---
-def install_package(package):
-    try:
-        # 使用 --user 參數繞過權限鎖定
-        subprocess.check_call([sys.executable, "-m", "pip", "install", package, "--user"])
-        print(f"Successfully installed {package}")
-    except Exception as e:
-        print(f"Failed to install {package}: {e}")
-
-try:
-    import onnx
-except ImportError:
-    # 如果找不到 onnx，就現場安裝
-    install_package("onnx>=1.12.0")
-    install_package("onnxruntime")
-    
-    # 安裝完後，把使用者目錄加入系統路徑，確保程式讀得到
-    import site
-    try:
-        sys.path.append(site.getusersitepackages())
-    except AttributeError:
-        # Fallback for some environments
-        pass
-# -----------------------------------
-
+import os
 # -------------------------
 # Model
 # -------------------------
@@ -103,7 +77,7 @@ def main():
                     fmt = "onnx" if "ONNX" in export_format else "engine"
                     
                     # 執行匯出
-                    path = model.export(format=fmt, simplify=False)
+                    path = model.export(format=fmt) 
                     
                     # 成功後，將路徑存入 session_state，這樣重整後下載按鈕才不會消失
                     st.session_state['export_file'] = path
