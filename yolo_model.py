@@ -4,6 +4,22 @@ from PIL import Image                  # 影像處理
 import cv2                             # OpenCV
 from ultralytics import YOLOWorld      # YOLO 模型
 import os
+
+# --- 環境診斷區 (Debugging) ---
+st.sidebar.error("⚠️ 環境診斷模式開啟")
+try:
+    # 執行 pip list 看看環境裡到底有誰
+    installed_packages = os.popen('pip list').read()
+    st.sidebar.text_area("已安裝套件清單 (Pip List)", installed_packages, height=300)
+    
+    # 嘗試匯入看看
+    import onnx
+    st.sidebar.success(f"ONNX 已安裝! 版本: {onnx.__version__}")
+except ImportError:
+    st.sidebar.error("找不到 ONNX 套件 (Import failed)")
+except Exception as e:
+    st.sidebar.error(f"無法讀取清單: {e}")
+
 # -------------------------
 # Model
 # -------------------------

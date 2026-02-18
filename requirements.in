@@ -1,8 +1,8 @@
-ultralytics
+ultralytics[export]
 streamlit
 opencv-python-headless
 pillow
-numpy
+numpy<2.0.0
 git+https://github.com/ultralytics/CLIP.git
 onnx>=1.12.0
 onnxslim
