@@ -155,6 +155,7 @@ uv run streamlit run main.py
 - **需求檔含 URL/路徑相依**：請遵循 `package_name @ URL` 格式；<br>或改用 `pyproject.toml`/`uv lock` 方案。
 - **Windows 權限**：PowerShell 需要允許執行腳本（`Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`）。
 
+- **怎麼去更新pyproject.toml和uv lock**：請直接刪除它們<br>用`uv init`用出全新的`pyproject.toml`<br>再用`uv add streamlit <要裝的套件>`<br>它會自動下載這些套件，將這些套件寫入 pyproject.toml。它會自動計算並生成一個 全新的 uv.lock。這個鎖定檔會包含所有套件的詳細資訊，而且因為是現在生成的，它會完美對應目前的環境。
 ---
 
 ### 參考
